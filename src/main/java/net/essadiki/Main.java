@@ -1,7 +1,8 @@
-package net.essadiki;
+package net.essadiki.neuralnetwork;
 
 import net.essadiki.neuralnetwork.activation.Sigmoid;
 import net.essadiki.neuralnetwork.model.*;
+import net.essadiki.neuralnetwork.observer.Dashboard;
 
 import java.util.Arrays;
 
@@ -9,59 +10,56 @@ public class Main {
 
     public static void main(String[] args) {
 
-        InputLayer inputLayer = new InputLayer(3);
+        NeuralNetwork network = new NeuralNetwork();
 
-        HiddenLayer hiddenLayer =
-                new HiddenLayer(5, new Sigmoid());
+        Dashboard dashboard = new Dashboard();
 
-        OutputLayer outputLayer =
-                new OutputLayer(2, new Sigmoid());
+        network.addObserver(dashboard);
 
-        connectLayers(inputLayer, hiddenLayer);
-        connectLayers(hiddenLayer, outputLayer);
+        network.addLayer(new InputLayer(3));
+
+        network.addLayer(
+                new HiddenLayer(5, new Sigmoid())
+        );
+
+        network.addLayer(
+                new OutputLayer(2, new Sigmoid())
+        );
 
         double[] input = {1.0, 0.5, 0.8};
 
-        System.out.println("===== NEURAL NETWORK =====");
-
-        double[] inputValues = inputLayer.forward(input);
+        System.out.println("===== ETAT INITIAL =====");
 
         System.out.println(
-                "Input : " + Arrays.toString(inputValues)
+                "Etat : " + network.getStateName()
         );
 
-        double[] hiddenValues =
-                hiddenLayer.forward(inputValues);
+        System.out.println("\n===== TEST AVANT ENTRAINEMENT =====");
 
-        System.out.println(
-                "Hidden : " + Arrays.toString(hiddenValues)
-        );
-
-        double[] outputValues =
-                outputLayer.forward(hiddenValues);
-
-        System.out.println(
-                "Output : " + Arrays.toString(outputValues)
-        );
-    }
-
-    private static void connectLayers(Layer source,
-                                      Layer destination) {
-
-        for (Neuron destinationNeuron :
-                destination.getNeurons()) {
-
-            for (Neuron sourceNeuron :
-                    source.getNeurons()) {
-
-                Connection connection = new Connection(
-                        sourceNeuron,
-                        destinationNeuron,
-                        0.5
-                );
-
-                destinationNeuron.addConnection(connection);
-            }
+        try {
+            network.predict(input);
+        } catch (IllegalStateException e) {
+            System.out.println("Erreur : " + e.getMessage());
         }
+
+        System.out.println("\n===== ENTRAINEMENT =====");
+
+        network.fit();
+
+        System.out.println("\n===== PREDICTION =====");
+
+        double[] result = network.predict(input);
+
+        System.out.println(
+                "Input : " + Arrays.toString(input)
+        );
+
+        System.out.println(
+                "Output : " + Arrays.toString(result)
+        );
+
+        System.out.println(
+                "Etat final : " + network.getStateName()
+        );
     }
 }
