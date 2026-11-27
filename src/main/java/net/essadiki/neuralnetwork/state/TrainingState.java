@@ -14,8 +14,15 @@ public class TrainingState implements NetworkState {
     @Override
     public void train(NeuralNetwork network) {
 
-        network.performTraining();
-        network.setState(new TrainedState());
+        try {
+            network.performTraining();
+            network.setState(new TrainedState());
+
+        } catch (RuntimeException e) {
+
+            network.setState(new ConstructionState());
+            throw e;
+        }
     }
 
     @Override

@@ -30,7 +30,9 @@ public class Neuron {
 
         connections.add(connection);
     }
-
+    public ActivationFunction getActivationFunction() {
+        return activationFunction;
+    }
     public double compute() {
 
         double sum = bias;

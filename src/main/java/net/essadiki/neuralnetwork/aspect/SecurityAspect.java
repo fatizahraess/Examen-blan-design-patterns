@@ -1,3 +1,4 @@
+
 package net.essadiki.neuralnetwork.aspect;
 
 import net.essadiki.neuralnetwork.security.Role;
@@ -8,8 +9,13 @@ import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.DeclarePrecedence;
 
 @Aspect
-@DeclarePrecedence("SecurityAspect, LoggingAspect, *")
+@DeclarePrecedence(
+        "net.essadiki.neuralnetwork.aspect.SecurityAspect, " +
+                "net.essadiki.neuralnetwork.aspect.LoggingAspect, *"
+)
 public class SecurityAspect {
+
+    // Operations reservees aux administrateurs
 
     @Before(
             "execution(* net.essadiki.neuralnetwork.model."
@@ -21,7 +27,9 @@ public class SecurityAspect {
                     + "execution(* net.essadiki.neuralnetwork.model."
                     + "NeuralNetwork.setState(..)) || "
                     + "execution(* net.essadiki.neuralnetwork.model."
-                    + "NeuralNetwork.performTraining(..))"
+                    + "NeuralNetwork.performTraining(..)) || "
+                    + "execution(* net.essadiki.neuralnetwork.model."
+                    + "NeuralNetwork.setTrainingData(..))"
     )
     public void checkAdminPermission() {
 
@@ -40,6 +48,8 @@ public class SecurityAspect {
                 "[SECURITY] Acces administrateur autorise"
         );
     }
+
+    // Prediction autorisee aux administrateurs et utilisateurs
 
     @Before(
             "execution(* net.essadiki.neuralnetwork.model."

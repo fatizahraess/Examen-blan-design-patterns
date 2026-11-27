@@ -1,8 +1,8 @@
-package net.essadiki.neuralnetwork;
+package net.essadiki;
 
-import net.essadiki.neuralnetwork.activation.Sigmoid;
-import net.essadiki.neuralnetwork.decorator.*;
-import net.essadiki.neuralnetwork.model.*;
+import net.essadiki.neuralnetwork.builder.NeuralNetworkBuilder;
+import net.essadiki.neuralnetwork.factory.SigmoidFactory;
+import net.essadiki.neuralnetwork.model.NeuralNetwork;
 import net.essadiki.neuralnetwork.observer.Dashboard;
 import net.essadiki.neuralnetwork.security.*;
 
@@ -12,68 +12,62 @@ public class Main {
 
     public static void main(String[] args) {
 
-        NeuralNetwork network = new NeuralNetwork();
-
-        double[] input = {1.0, 0.5, 0.8};
+        SecurityContext.setRole(Role.ADMIN);
 
         try {
 
-            System.out.println("===== TEST ADMIN =====");
+            System.out.println("===== BUILDER ET FACTORY =====");
 
-            SecurityContext.setRole(Role.ADMIN);
-
-            network.addObserver(new Dashboard());
-
-            network.addLayer(new InputLayer(3));
-
-            network.addLayer(
-                    new TimingLayerDecorator(
-                            new LoggingLayerDecorator(
-                                    new HiddenLayer(
-                                            5, new Sigmoid()
-                                    )
+            NeuralNetwork network =
+                    new NeuralNetworkBuilder()
+                            .observer(new Dashboard())
+                            .inputLayer(3)
+                            .hiddenLayer(
+                                    5, new SigmoidFactory()
                             )
-                    )
+                            .outputLayer(
+                                    2, new SigmoidFactory()
+                            )
+                            .build();
+
+            double[][] inputs = {
+                    {1.0, 0.5, 0.8}
+            };
+
+            double[][] targets = {
+                    {0.9, 0.1}
+            };
+
+            network.setTrainingData(
+                    inputs, targets, 100, 0.5
             );
 
-            network.addLayer(
-                    new OutputLayer(2, new Sigmoid())
-            );
+            System.out.println("\n===== ENTRAINEMENT =====");
 
             network.fit();
 
-            System.out.println("\n===== TEST USER =====");
-
             SecurityContext.setRole(Role.USER);
 
-            double[] result = network.predict(input);
+            System.out.println("\n===== PREDICTION =====");
 
-            System.out.println("Prediction : "
-                    + Arrays.toString(result));
+            double[] result =
+                    network.predict(inputs[0]);
 
-            try {
+            System.out.println(
+                    "Input : " + Arrays.toString(inputs[0])
+            );
 
-                network.train();
+            System.out.println(
+                    "Target : " + Arrays.toString(targets[0])
+            );
 
-            } catch (SecurityException e) {
+            System.out.println(
+                    "Prediction : " + Arrays.toString(result)
+            );
 
-                System.out.println("Erreur : "
-                        + e.getMessage());
-            }
-
-            System.out.println("\n===== TEST GUEST =====");
-
-            SecurityContext.setRole(Role.GUEST);
-
-            try {
-
-                network.predict(input);
-
-            } catch (SecurityException e) {
-
-                System.out.println("Erreur : "
-                        + e.getMessage());
-            }
+            System.out.println(
+                    "Etat final : " + network.getStateName()
+            );
 
         } finally {
 

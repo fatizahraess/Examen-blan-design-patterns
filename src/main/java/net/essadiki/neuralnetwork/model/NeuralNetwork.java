@@ -1,5 +1,5 @@
 package net.essadiki.neuralnetwork.model;
-
+import net.essadiki.neuralnetwork.activation.Sigmoid;
 import net.essadiki.neuralnetwork.state.*;
 import net.essadiki.neuralnetwork.observer.NetworkObserver;
 import net.essadiki.neuralnetwork.decorator.LayerDecorator;
@@ -7,7 +7,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NeuralNetwork {
+    private double[][] trainingInputs;
+    private double[][] trainingTargets;
 
+    private int epochs = 100;
+    private double learningRate = 0.1;
     private final List<Layer> layers = new ArrayList<>();
 
     private final List<NetworkObserver> observers =
@@ -16,7 +20,87 @@ public class NeuralNetwork {
     private NetworkState state = new ConstructionState();
 
     // Gestion des couches
+    public void setTrainingData(
+            double[][] inputs,
+            double[][] targets,
+            int epochs,
+            double learningRate) {
 
+        validateArchitecture();
+
+        if (state instanceof TrainingState) {
+            throw new IllegalStateException(
+                    "Entrainement deja en cours"
+            );
+        }
+
+        if (inputs == null || targets == null
+                || inputs.length == 0
+                || inputs.length != targets.length
+                || epochs <= 0
+                || !Double.isFinite(learningRate)
+                || learningRate <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Donnees d'entrainement invalides"
+            );
+        }
+
+        int inputSize = layers.get(0).size();
+
+        int outputSize =
+                layers.get(layers.size() - 1).size();
+
+        double[][] inputCopy = new double[inputs.length][];
+        double[][] targetCopy = new double[targets.length][];
+
+        for (int i = 0; i < inputs.length; i++) {
+
+            if (inputs[i] == null || targets[i] == null
+                    || inputs[i].length != inputSize
+                    || targets[i].length != outputSize) {
+
+                throw new IllegalArgumentException(
+                        "Dimensions incorrectes"
+                );
+            }
+
+            for (double value : inputs[i]) {
+                if (!Double.isFinite(value)) {
+                    throw new IllegalArgumentException(
+                            "Entree invalide"
+                    );
+                }
+            }
+
+            for (double target : targets[i]) {
+                if (!Double.isFinite(target)
+                        || target < 0 || target > 1) {
+                    throw new IllegalArgumentException(
+                            "Cible invalide"
+                    );
+                }
+            }
+
+            inputCopy[i] = inputs[i].clone();
+            targetCopy[i] = targets[i].clone();
+        }
+
+        this.trainingInputs = inputCopy;
+        this.trainingTargets = targetCopy;
+        this.epochs = epochs;
+        this.learningRate = learningRate;
+    }
+    private double[] computeForward(double[] input) {
+
+        double[] result = input;
+
+        for (Layer layer : layers) {
+            result = layer.forward(result);
+        }
+
+        return result;
+    }
     public void addLayer(Layer layer) {
 
         if (!(state instanceof ConstructionState)) {
@@ -118,11 +202,89 @@ public class NeuralNetwork {
 
         System.out.println("Entrainement en cours...");
 
-        // Simulation de l'entrainement
+        if (trainingInputs == null) {
+
+            System.out.println(
+                    "Mode demonstration : aucun apprentissage"
+            );
+
+            return;
+        }
+
+        Layer outputLayer =
+                layers.get(layers.size() - 1);
+
+        for (Neuron neuron : outputLayer.getNeurons()) {
+
+            if (!(neuron.getActivationFunction()
+                    instanceof Sigmoid)) {
+
+                throw new IllegalStateException(
+                        "L'apprentissage exige une sortie Sigmoid"
+                );
+            }
+        }
+
+        for (int epoch = 0; epoch < epochs; epoch++) {
+
+            double totalError = 0;
+
+            for (int i = 0; i < trainingInputs.length; i++) {
+
+                double[] prediction =
+                        computeForward(trainingInputs[i]);
+
+                double[] target = trainingTargets[i];
+
+                for (int j = 0; j < outputLayer.size(); j++) {
+
+                    Neuron neuron =
+                            outputLayer.getNeurons().get(j);
+
+                    double error = target[j] - prediction[j];
+
+                    totalError += 0.5 * error * error;
+
+                    double delta = error
+                            * prediction[j]
+                            * (1 - prediction[j]);
+
+                    for (Connection connection :
+                            neuron.getConnections()) {
+
+                        double newWeight =
+                                connection.getWeight()
+                                        + learningRate
+                                        * delta
+                                        * connection.getSource()
+                                        .getOutput();
+
+                        newWeight = Math.max(
+                                0, Math.min(1, newWeight)
+                        );
+
+                        connection.setWeight(newWeight);
+                    }
+
+                    neuron.setBias(
+                            neuron.getBias()
+                                    + learningRate * delta
+                    );
+                }
+            }
+
+            if (epoch % 10 == 0 || epoch == epochs - 1) {
+
+                System.out.println(
+                        "Epoch " + (epoch + 1)
+                                + " | Erreur moyenne : "
+                                + totalError / trainingInputs.length
+                );
+            }
+        }
 
         System.out.println("Entrainement termine.");
     }
-
     // Propagation avant
 
     public double[] forwardPropagation(double[] input) {
@@ -133,15 +295,8 @@ public class NeuralNetwork {
             );
         }
 
-        double[] result = input;
-
-        for (Layer layer : layers) {
-            result = layer.forward(result);
-        }
-
-        return result;
+        return computeForward(input);
     }
-
     public List<Layer> getLayers() {
         return List.copyOf(layers);
     }
