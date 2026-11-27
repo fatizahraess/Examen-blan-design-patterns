@@ -1,30 +1,67 @@
 package net.essadiki;
-import net.essadiki.neuralnetwork.activation.*;
-import net.essadiki.neuralnetwork.adapter.*;
+
+import net.essadiki.neuralnetwork.activation.Sigmoid;
+import net.essadiki.neuralnetwork.model.*;
+
+import java.util.Arrays;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        double x = 2.0;
+        InputLayer inputLayer = new InputLayer(3);
 
-        System.out.println("===== PATTERN STRATEGY =====");
+        HiddenLayer hiddenLayer =
+                new HiddenLayer(5, new Sigmoid());
 
-        ActivationFunction activation = new Sigmoid();
-        System.out.println("Sigmoid : " + activation.activate(x));
+        OutputLayer outputLayer =
+                new OutputLayer(2, new Sigmoid());
 
-        activation = new Identity();
-        System.out.println("Identity : " + activation.activate(x));
+        connectLayers(inputLayer, hiddenLayer);
+        connectLayers(hiddenLayer, outputLayer);
 
-        activation = new ReLU();
-        System.out.println("ReLU : " + activation.activate(x));
+        double[] input = {1.0, 0.5, 0.8};
 
-        System.out.println("\n===== PATTERN ADAPTER =====");
+        System.out.println("===== NEURAL NETWORK =====");
 
-        activation = new ActivationAdapter(
-                new LegacyActivation()
+        double[] inputValues = inputLayer.forward(input);
+
+        System.out.println(
+                "Input : " + Arrays.toString(inputValues)
         );
 
-        System.out.println("Legacy : " + activation.activate(x));
+        double[] hiddenValues =
+                hiddenLayer.forward(inputValues);
+
+        System.out.println(
+                "Hidden : " + Arrays.toString(hiddenValues)
+        );
+
+        double[] outputValues =
+                outputLayer.forward(hiddenValues);
+
+        System.out.println(
+                "Output : " + Arrays.toString(outputValues)
+        );
+    }
+
+    private static void connectLayers(Layer source,
+                                      Layer destination) {
+
+        for (Neuron destinationNeuron :
+                destination.getNeurons()) {
+
+            for (Neuron sourceNeuron :
+                    source.getNeurons()) {
+
+                Connection connection = new Connection(
+                        sourceNeuron,
+                        destinationNeuron,
+                        0.5
+                );
+
+                destinationNeuron.addConnection(connection);
+            }
+        }
     }
 }
