@@ -2,7 +2,7 @@ package net.essadiki.neuralnetwork.model;
 
 import net.essadiki.neuralnetwork.state.*;
 import net.essadiki.neuralnetwork.observer.NetworkObserver;
-
+import net.essadiki.neuralnetwork.decorator.LayerDecorator;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +35,14 @@ public class NeuralNetwork {
 
         layers.add(layer);
     }
+    private Layer unwrapLayer(Layer layer) {
 
+        while (layer instanceof LayerDecorator decorator) {
+            layer = decorator.getWrappedLayer();
+        }
+
+        return layer;
+    }
     private void connectLayers(Layer source,
                                Layer destination) {
 
@@ -141,14 +148,34 @@ public class NeuralNetwork {
 
     private void validateArchitecture() {
 
-        if (layers.size() < 2
-                || !(layers.get(0) instanceof InputLayer)
-                || !(layers.get(layers.size() - 1)
-                instanceof OutputLayer)) {
+        if (layers.size() < 2) {
+            throw new IllegalStateException(
+                    "Architecture du reseau invalide"
+            );
+        }
+
+        Layer first = unwrapLayer(layers.get(0));
+
+        Layer last = unwrapLayer(
+                layers.get(layers.size() - 1)
+        );
+
+        if (!(first instanceof InputLayer)
+                || !(last instanceof OutputLayer)) {
 
             throw new IllegalStateException(
                     "Architecture du reseau invalide"
             );
         }
-    }
-}
+
+        for (int i = 1; i < layers.size() - 1; i++) {
+
+            if (!(unwrapLayer(layers.get(i))
+                    instanceof HiddenLayer)) {
+
+                throw new IllegalStateException(
+                        "Les couches intermediaires doivent etre cachees"
+                );
+            }
+        }
+    }}
