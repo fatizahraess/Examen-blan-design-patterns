@@ -3,7 +3,9 @@ package net.essadiki.neuralnetwork;
 import net.essadiki.neuralnetwork.activation.Sigmoid;
 import net.essadiki.neuralnetwork.model.*;
 import net.essadiki.neuralnetwork.observer.Dashboard;
-
+import net.essadiki.neuralnetwork.security.Role;
+import net.essadiki.neuralnetwork.security.SecurityContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,10 +14,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class NeuralNetworkTest {
 
     private NeuralNetwork network;
-
+    @AfterEach
+    void tearDown() {
+        SecurityContext.logout();
+    }
     @BeforeEach
     void setUp() {
-
+        SecurityContext.setRole(Role.ADMIN);
         network = new NeuralNetwork();
 
         network.addLayer(new InputLayer(3));

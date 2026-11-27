@@ -1,5 +1,9 @@
 package net.essadiki.neuralnetwork;
+import net.essadiki.neuralnetwork.security.Role;
+import net.essadiki.neuralnetwork.security.SecurityContext;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import net.essadiki.neuralnetwork.activation.Sigmoid;
 import net.essadiki.neuralnetwork.decorator.*;
 import net.essadiki.neuralnetwork.model.*;
@@ -9,7 +13,15 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DecoratorTest {
+    @BeforeEach
+    void setUp() {
+        SecurityContext.setRole(Role.ADMIN);
+    }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContext.logout();
+    }
     @Test
     void testLoggingDecorator() {
 

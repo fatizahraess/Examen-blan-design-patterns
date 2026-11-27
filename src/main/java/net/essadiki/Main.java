@@ -4,6 +4,7 @@ import net.essadiki.neuralnetwork.activation.Sigmoid;
 import net.essadiki.neuralnetwork.decorator.*;
 import net.essadiki.neuralnetwork.model.*;
 import net.essadiki.neuralnetwork.observer.Dashboard;
+import net.essadiki.neuralnetwork.security.*;
 
 import java.util.Arrays;
 
@@ -13,46 +14,70 @@ public class Main {
 
         NeuralNetwork network = new NeuralNetwork();
 
-        network.addObserver(new Dashboard());
-
-        // Couche d'entree normale
-        network.addLayer(new InputLayer(3));
-
-        // Couche cachee avec deux decorateurs
-        network.addLayer(
-                new TimingLayerDecorator(
-                        new LoggingLayerDecorator(
-                                new HiddenLayer(
-                                        5, new Sigmoid()
-                                )
-                        )
-                )
-        );
-
-        // Couche de sortie avec un decorateur
-        network.addLayer(
-                new LoggingLayerDecorator(
-                        new OutputLayer(
-                                2, new Sigmoid()
-                        )
-                )
-        );
-
-        System.out.println("===== ETAT INITIAL =====");
-
-        System.out.println(network.getStateName());
-
-        System.out.println("\n===== ENTRAINEMENT =====");
-
-        network.fit();
-
-        System.out.println("\n===== PREDICTION =====");
-
         double[] input = {1.0, 0.5, 0.8};
 
-        double[] result = network.predict(input);
+        try {
 
-        System.out.println("\nResultat final : "
-                + Arrays.toString(result));
+            System.out.println("===== TEST ADMIN =====");
+
+            SecurityContext.setRole(Role.ADMIN);
+
+            network.addObserver(new Dashboard());
+
+            network.addLayer(new InputLayer(3));
+
+            network.addLayer(
+                    new TimingLayerDecorator(
+                            new LoggingLayerDecorator(
+                                    new HiddenLayer(
+                                            5, new Sigmoid()
+                                    )
+                            )
+                    )
+            );
+
+            network.addLayer(
+                    new OutputLayer(2, new Sigmoid())
+            );
+
+            network.fit();
+
+            System.out.println("\n===== TEST USER =====");
+
+            SecurityContext.setRole(Role.USER);
+
+            double[] result = network.predict(input);
+
+            System.out.println("Prediction : "
+                    + Arrays.toString(result));
+
+            try {
+
+                network.train();
+
+            } catch (SecurityException e) {
+
+                System.out.println("Erreur : "
+                        + e.getMessage());
+            }
+
+            System.out.println("\n===== TEST GUEST =====");
+
+            SecurityContext.setRole(Role.GUEST);
+
+            try {
+
+                network.predict(input);
+
+            } catch (SecurityException e) {
+
+                System.out.println("Erreur : "
+                        + e.getMessage());
+            }
+
+        } finally {
+
+            SecurityContext.logout();
+        }
     }
 }
